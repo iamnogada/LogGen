@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loggen-config-dev
+data:
+  application.properties: |
+    # Development Application Configuration
+    spring.application.name=loggen-dev-k8s
+    
+    # Log Generation Configuration for Development
+    loggen.schedule.interval=2000
+    loggen.data.size=512
+    loggen.message.template=dev kubernetes log message
+    loggen.log.level=DEBUG
+    loggen.log.source=dev-k8s-scheduler
+    
+    # Logging Configuration for Development
+    logging.level.net.kubepia.loggen=DEBUG
+    logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [DEV-K8S] %logger{36} - %msg%n
+    
+    # Actuator Configuration
+    management.endpoints.web.exposure.include=health,info,metrics
+    management.endpoint.health.show-details=always
+    management.endpoint.info.enabled=true
+    management.endpoint.metrics.enabled=true
+    
+    # Server Configuration
+    server.port=8080 
