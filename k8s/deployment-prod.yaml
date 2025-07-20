@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loggen-prod
+  labels:
+    app: loggen-prod
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: loggen-prod
+  template:
+    metadata:
+      labels:
+        app: loggen-prod
+    spec:
+      containers:
+      - name: loggen
+        image: loggen:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_CONFIG_LOCATION
+          value: "classpath:/,file:/config/"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /api/profile/liveness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/profile/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config-volume
+        configMap:
+          name: loggen-config-prod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loggen-prod-service
+  labels:
+    app: loggen-prod
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: loggen-prod 

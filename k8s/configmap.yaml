@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loggen-config
+data:
+  application.properties: |
+    # Application Configuration
+    spring.application.name=loggen-k8s
+    
+    # Log Generation Configuration
+    loggen.schedule.interval=3000
+    loggen.data.size=1536
+    loggen.message.template=kubernetes log message
+    loggen.log.level=INFO
+    loggen.log.source=k8s-scheduler
+    
+    # Logging Configuration
+    logging.level.net.kubepia.loggen=INFO
+    logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [K8S] %logger{36} - %msg%n
+    
+    # Actuator Configuration
+    management.endpoints.web.exposure.include=health,info,metrics
+    management.endpoint.health.show-details=always
+    management.endpoint.info.enabled=true
+    management.endpoint.metrics.enabled=true
+    
+    # Server Configuration
+    server.port=8080 

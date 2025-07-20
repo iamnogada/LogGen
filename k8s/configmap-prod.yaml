@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loggen-config-prod
+data:
+  application.properties: |
+    # Production Application Configuration
+    spring.application.name=loggen-prod-k8s
+    
+    # Log Generation Configuration for Production
+    loggen.schedule.interval=5000
+    loggen.data.size=2048
+    loggen.message.template=prod kubernetes log message
+    loggen.log.level=WARN
+    loggen.log.source=prod-k8s-scheduler
+    
+    # Logging Configuration for Production
+    logging.level.net.kubepia.loggen=WARN
+    logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [PROD-K8S] %logger{36} - %msg%n
+    
+    # Actuator Configuration
+    management.endpoints.web.exposure.include=health,info,metrics
+    management.endpoint.health.show-details=always
+    management.endpoint.info.enabled=true
+    management.endpoint.metrics.enabled=true
+    
+    # Server Configuration
+    server.port=8080 
