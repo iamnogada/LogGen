@@ -2,6 +2,8 @@ package net.kubepia.loggen.logmanager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,12 @@ import java.util.Map;
 public class LogManager {
     
     private static final Logger logger = LoggerFactory.getLogger(LogManager.class);
+    
+    @Value("${POD_ID:unknown}")
+    private String podId;
+
+    @Autowired
+    private net.kubepia.loggen.LogGen logGen;
     
     
     /**
@@ -52,7 +60,10 @@ public class LogManager {
         String source = logData.containsKey("source") ? (String) logData.get("source") : "unknown";
         
         // Create response with log data
-        response.put("id", System.currentTimeMillis());
+        long currentId = System.currentTimeMillis();
+        response.put("id", currentId);
+        response.put("podId", podId);
+        response.put("podIdWithId", podId + "-" + currentId);
         response.put("message", message);
         response.put("level", level);
         response.put("source", source);
@@ -61,5 +72,34 @@ public class LogManager {
         
         logger.info("Log created successfully: {}", response);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * GET /log/status - Get log generation status
+     * @return current log generation status
+     */
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Object>> getLogGenerationStatus() {
+        logger.info("GET /log/status endpoint called");
+        Map<String, Object> status = logGen.getLogGenerationStatus();
+        return ResponseEntity.ok(status);
+    }
+
+    /**
+     * POST /log/restart - Restart log generation
+     * @return restart confirmation
+     */
+    @PostMapping("/restart")
+    public ResponseEntity<Map<String, Object>> restartLogGeneration() {
+        logger.info("POST /log/restart endpoint called");
+        
+        logGen.restartLogGeneration();
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Log generation restarted successfully");
+        response.put("podId", podId);
+        response.put("timestamp", LocalDateTime.now().toString());
+        
+        return ResponseEntity.ok(response);
     }
 }

@@ -13,6 +13,7 @@ data:
     loggen.message.template=prod kubernetes log message
     loggen.log.level=WARN
     loggen.log.source=prod-k8s-scheduler
+    loggen.max.count=2500
     
     # Logging Configuration for Production
     logging.level.net.kubepia.loggen=WARN

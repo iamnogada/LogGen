@@ -13,6 +13,7 @@ data:
     loggen.message.template=kubernetes log message
     loggen.log.level=INFO
     loggen.log.source=k8s-scheduler
+    loggen.max.count=1500
     
     # Logging Configuration
     logging.level.net.kubepia.loggen=INFO

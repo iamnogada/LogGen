@@ -13,6 +13,7 @@ data:
     loggen.message.template=dev kubernetes log message
     loggen.log.level=DEBUG
     loggen.log.source=dev-k8s-scheduler
+    loggen.max.count=800
     
     # Logging Configuration for Development
     logging.level.net.kubepia.loggen=DEBUG

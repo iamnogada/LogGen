@@ -22,6 +22,10 @@ spec:
         env:
         - name: SPRING_CONFIG_LOCATION
           value: "classpath:/,file:/config/"
+        - name: POD_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         resources:
           requests:
             memory: "256Mi"

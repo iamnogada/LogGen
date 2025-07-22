@@ -32,13 +32,35 @@ public class LogGen {
     @Value("${loggen.log.source:scheduler}")
     private String logSource;
 
+    @Value("${POD_ID:PODID}")
+    private String podId;
+
+    @Value("${loggen.max.count:1000}")
+    private long maxLogCount;
+
     private final AtomicLong sequenceId = new AtomicLong(1);
+    private volatile boolean logGenerationStopped = false;
 
     /**
      * Scheduled task that runs based on configured interval to create log
      */
     @Scheduled(fixedRateString = "${loggen.schedule.interval:1000}")
     public void generateHelloWorldLog() {
+        // Check if log generation has been stopped
+        if (logGenerationStopped) {
+            return;
+        }
+
+        // Check if maximum log count has been reached
+        long currentId = sequenceId.get();
+        if (currentId > maxLogCount) {
+            if (!logGenerationStopped) {
+                logGenerationStopped = true;
+                logger.warn("[{}] Maximum log count ({}) reached. Log generation stopped.", podId, maxLogCount);
+            }
+            return;
+        }
+
         // Generate data based on configured size
         String message = generateMessageWithSize(messageTemplate, dataSize);
 
@@ -49,13 +71,18 @@ public class LogGen {
 
         // Create the log entry
         Map<String, Object> response = new HashMap<>();
-        response.put("id", sequenceId.getAndIncrement());
+        currentId = sequenceId.getAndIncrement();
+        response.put("id", currentId);
+        response.put("podId", podId);
+        response.put("podIdWithId", podId + "-" + currentId);
         response.put("message", message);
         response.put("level", logLevel);
         response.put("source", logSource);
         response.put("timestamp", LocalDateTime.now().toString());
         response.put("status", "auto-generated");
         response.put("dataSize", dataSize);
+        response.put("maxLogCount", maxLogCount);
+        response.put("remainingLogs", maxLogCount - currentId);
 
         // Log using SLF4J/Logback
         logGeneratedData(response);
@@ -73,7 +100,7 @@ public class LogGen {
         }
 
         StringBuilder message = new StringBuilder(template);
-        while (message.length() < targetSize) {
+        while (message.length() < targetSize*1024) {
             message.append(" ").append(template);
         }
 
@@ -90,15 +117,19 @@ public class LogGen {
 
         // logid 포함된 로그 메시지 생성
         String logMessage = String.format(
-                "[logid:%s] TestLog: id=%s, message=%s, level=%s, source=%s, timestamp=%s, status=%s, dataSize=%s",
+                "[logid:%s] TestLog: id=%s, podId=%s, podIdWithId=%s, message=%s, level=%s, source=%s, timestamp=%s, status=%s, dataSize=%s, maxLogCount=%s, remainingLogs=%s",
                 logId,
                 logData.get("id"),
+                logData.get("podId"),
+                logData.get("podIdWithId"),
                 logData.get("message"),
                 logData.get("level"),
                 logData.get("source"),
                 logData.get("timestamp"),
                 logData.get("status"),
-                logData.get("dataSize"));
+                logData.get("dataSize"),
+                logData.get("maxLogCount"),
+                logData.get("remainingLogs"));
 
         // 로그 레벨에 따라 출력
         switch (logLevel.toUpperCase()) {
@@ -119,5 +150,28 @@ public class LogGen {
                 logger.info(logMessage);
                 break;
         }
+    }
+
+    /**
+     * Reset log generation counter and restart log generation
+     */
+    public void restartLogGeneration() {
+        sequenceId.set(1);
+        logGenerationStopped = false;
+        logger.info("[{}] Log generation restarted. Counter reset to 1.", podId);
+    }
+
+    /**
+     * Get current log generation status
+     */
+    public Map<String, Object> getLogGenerationStatus() {
+        Map<String, Object> status = new HashMap<>();
+        status.put("podId", podId);
+        status.put("currentId", sequenceId.get());
+        status.put("maxLogCount", maxLogCount);
+        status.put("remainingLogs", Math.max(0, maxLogCount - sequenceId.get()));
+        status.put("logGenerationStopped", logGenerationStopped);
+        status.put("timestamp", LocalDateTime.now().toString());
+        return status;
     }
 }
